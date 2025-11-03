@@ -2,29 +2,30 @@
 <html lang="es">
 <head>
   <meta charset="utf-8" />
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Minicampus GCP para Ciencia de Datos</title>
   <style>
     :root{
-      --bg:#0f172a;       /* slate-900 */
-      --panel:#111827;    /* gray-900 */
-      --muted:#1f2937;    /* gray-800 */
-      --text:#e5e7eb;     /* gray-200 */
-      --accent:#22d3ee;   /* cyan-400 */
-      --accent-2:#a78bfa; /* violet-400 */
-      --good:#22c55e;     /* green-500 */
-      --bad:#ef4444;      /* red-500 */
+      --bg:#0c2f74;       /* azul profundo */
+      --panel:#123b8c;    /* azul medio */
+      --muted:#1f4db3;    /* azul + claro para bordes */
+      --text:#f1f5ff;     /* casi blanco */
+      --accent:#22d3ee;   /* cian */
+      --accent-2:#60a5fa; /* azul claro */
+      --good:#16a34a;     /* green-600 */
+      --bad:#dc2626;      /* red-600 */
       --warn:#f59e0b;     /* amber-500 */
     }
     *{box-sizing:border-box}
     html,body{height:100%}
-    body{margin:0;font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial;background:linear-gradient(120deg,#0b1025,#0f172a 45%,#0b132b);color:var(--text)}
+    body{margin:0;font:16px/1.6 Inter, system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,"Helvetica Neue",Arial;background:linear-gradient(160deg,#0b2e73 0%,#0c2f74 35%,#0a2a65 100%);color:var(--text)}
     a{color:var(--accent)}
     .app{display:grid;grid-template-columns:300px 1fr;height:100%}
     .sidebar{background:rgba(17,24,39,.9);backdrop-filter: blur(6px);border-right:1px solid #1f2937;padding:16px;overflow:auto}
     .brand{display:flex;gap:10px;align-items:center;margin-bottom:16px}
     .logo{width:36px;height:36px;border-radius:12px;background:conic-gradient(from 200deg, var(--accent), var(--accent-2));box-shadow:0 0 24px rgba(34,211,238,.35)}
-    .brand h1{font-size:18px;margin:0}
+    .brand h1{font-family:Montserrat,Inter,system-ui; font-size:18px;margin:0}
     .progress{margin:10px 0;background:#0b1224;border:1px solid #1f2937;border-radius:999px;height:14px;position:relative}
     .progress>div{background:linear-gradient(90deg,var(--accent),var(--accent-2));height:100%;width:0;border-radius:999px;transition:width .5s ease}
     .ptext{font-size:12px;opacity:.8;margin-top:4px}
@@ -88,7 +89,7 @@
     <div class="brand">
       <div class="logo" aria-hidden="true"></div>
       <div>
-        <h1>Minicampus: GCP para Ciencia de Datos</h1>
+        <h1>Encuentro de la Gerencia de Análisis de datos · Presupuestos y Costos</h1>
         <div class="scorebar"><span class="pill">Puntuación: <span id="score" class="score">0</span></span><span class="pill">Módulos completados: <span id="done">0</span>/5</span></div>
       </div>
     </div>
@@ -123,7 +124,7 @@
           <ul>
             <li>Escalabilidad automática</li>
             <li>Colaboración integrada</li>
-            <li>Seguridad e IAM</li>
+            <li>Seguridad y control de accesos</li>
             <li>Pago por uso</li>
           </ul>
         </div>
@@ -187,12 +188,12 @@
           </div>
           <div class="feedback"></div>
         </div>
-        <div class="q" data-answer="c" data-feedback="IAM (Identity and Access Management) es el sistema de roles y permisos.">
+        <div class="q" data-answer="c" data-feedback="El control de accesos se gestiona con roles y permisos.">
           <h4>5. El control de acceso en GCP se basa en…</h4>
           <div class="options">
             <button data-opt="a">Usuarios locales por VM</button>
             <button data-opt="b">VPN de terceros</button>
-            <button data-opt="c">IAM y roles</button>
+            <button data-opt="c">Roles y permisos por recurso</button>
             <button data-opt="d">Solo contraseñas compartidas</button>
           </div>
           <div class="feedback"></div>
@@ -458,7 +459,7 @@ git push</pre>
         <li>Organizá proyectos por dominio: <em>datasets</em> y <em>scripts</em> con nombres claros.</li>
         <li>Evitá subir datos sensibles a repositorios públicos.</li>
         <li>Documentá dependencias en <span class="kbd">requirements.txt</span>.</li>
-        <li>Usá <strong>IAM</strong> con el principio de menor privilegio.</li>
+        <li>Definí roles y permisos con el principio de menor privilegio.</li>
       </ul>
 
       <div class="quiz" data-quiz="buenas">
@@ -557,9 +558,9 @@ git push</pre>
       <!-- Completar frase cronometrado -->
       <div class="schema" style="margin-top:12px">
         <h3>Completar frase (⏱️ 20s)</h3>
-        <p><em>BigQuery cobra por <input type="text" id="fill1" class="kbd" style="min-width:120px"> procesados.</em></p>
-        <div class="scorebar"><button class="btn" id="startTimer">Iniciar</button><span class="pill">Tiempo: <span class="timer" id="timer">20</span>s</span></div>
-        <div id="fillFeedback" class="ptext"></div>
+        <p><em>BigQuery cobra por <input type="text" id="fill1" class="kbd" placeholder="escribí aquí" style="min-width:160px"> procesados.</em></p>
+        <div class="scorebar"><button class="btn" id="startTimer">Iniciar</button><button class="btn" id="checkNow" style="margin-left:8px">Comprobar</button><span class="pill">Tiempo: <span class="timer" id="timer">20</span>s</span></div>
+        <div id="fillFeedback" class="ptext">Tip: escribí <strong>bytes</strong> y presioná "Comprobar" o esperá al final del tiempo.</div>
       </div>
     </section>
 
@@ -664,19 +665,24 @@ git push</pre>
   });
 
   // ====== Juegos: drag & drop ======
-  let dragItem = null;
-  document.querySelectorAll('.draggable').forEach(el=>{
-    el.addEventListener('dragstart', e=>{ dragItem = el; e.dataTransfer.setData('text/plain', el.textContent); })
-  });
-  document.querySelectorAll('.droptarget').forEach(t=>{
-    t.addEventListener('dragover', e=>{ e.preventDefault(); t.style.background='#0e1a33'; })
-    t.addEventListener('dragleave', ()=> t.style.background='')
-    t.addEventListener('drop', e=>{ e.preventDefault(); t.style.background=''; if(!t.firstChild){ t.appendChild(dragItem.cloneNode(true)); }} )
-  });
+  let dragItem = null; let sourceParent = null;
+  function makeDraggable(el){
+    el.addEventListener('dragstart', e=>{ dragItem = el; sourceParent = el.parentElement; e.dataTransfer.setData('text/plain', el.textContent); });
+  }
+  document.querySelectorAll('.draggable').forEach(makeDraggable);
+  function makeDropzone(z){
+    z.addEventListener('dragover', e=>{ e.preventDefault(); z.style.background='#0e1a33'; });
+    z.addEventListener('dragleave', ()=> z.style.background='');
+    z.addEventListener('drop', e=>{ e.preventDefault(); z.style.background=''; if(dragItem){ z.appendChild(dragItem); }});
+  }
+  // Permitir volver al panel izquierdo (fuente) y a cada target
+  document.querySelectorAll('.droptarget').forEach(makeDropzone);
+  document.querySelectorAll('.schema .grid.cols-2 > div:first-child').forEach(makeDropzone);
+
   document.getElementById('checkMatch').addEventListener('click',()=>{
     let ok = 0; document.querySelectorAll('.droptarget').forEach(t=>{ const child=t.querySelector('.draggable'); if(child && child.dataset.key===t.dataset.accept) ok++; });
     const feed = document.getElementById('matchFeedback');
-    if(ok===3){ feed.textContent='✅ ¡Excelente! 3/3 pares correctos.'; state.score+=10; } else { feed.textContent=`⚠️ ${ok}/3 correctos. Ajustá los pares.`; }
+    if(ok===3){ feed.textContent='✅ ¡Excelente! 3/3 pares correctos.'; state.score+=10; } else { feed.textContent=`⚠️ ${ok}/3 correctos. Ajustá los pares (podés arrastrar de vuelta).`; }
     updateProgress();
   });
 
@@ -697,10 +703,11 @@ git push</pre>
     clearInterval(timerId); timeLeft = 20; timerEl.textContent = timeLeft; document.getElementById('fillFeedback').textContent='';
     timerId = setInterval(()=>{ timeLeft--; timerEl.textContent=timeLeft; if(timeLeft<=0){ clearInterval(timerId); checkFill(); } },1000);
   });
+  document.getElementById('checkNow').addEventListener('click',()=>{ clearInterval(timerId); checkFill(); });
   function checkFill(){
     const val = (document.getElementById('fill1').value||'').trim().toLowerCase();
-    if(['bytes','bytes procesados','los bytes'].includes(val)){ document.getElementById('fillFeedback').textContent='✅ Correcto: BigQuery cobra por bytes procesados.'; state.score+=5; }
-    else{ document.getElementById('fillFeedback').textContent='❌ La respuesta esperada era: "bytes".'; }
+    if(['bytes','bytes procesados','los bytes'].includes(val)){ document.getElementById('fillFeedback').innerHTML='✅ Correcto: BigQuery cobra por <strong>bytes</strong> procesados.'; state.score+=5; }
+    else{ document.getElementById('fillFeedback').innerHTML='❌ La respuesta esperada era: <strong>bytes</strong>.'; }
     updateProgress();
   }
 
@@ -712,10 +719,10 @@ git push</pre>
     'BigQuery':'Data warehouse serverless de Google que usa Standard SQL.',
     'Vertex AI Workbench':'Entorno gestionado de notebooks Jupyter en GCP.',
     'Cloud Storage':'Servicio de almacenamiento de objetos (archivos/buckets).',
-    'IAM':'Identity and Access Management: sistema de roles y permisos.',
     'Bytes procesados':'Métrica clave para costo de consulta en BigQuery.',
     'Kernel de Jupyter':'Entorno de ejecución seleccionado para un notebook.',
-    'requirements.txt':'Archivo que lista dependencias de un proyecto Python.'
+    'requirements.txt':'Archivo que lista dependencias de un proyecto Python.',
+    'Roles y permisos':'Modelo de control de acceso basado en permisos mínimos necesarios.'
   };
   const glossList = document.getElementById('glossList');
   const glossDef = document.getElementById('glossDef');
