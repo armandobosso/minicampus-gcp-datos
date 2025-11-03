@@ -589,173 +589,9 @@ git push</pre>
 </div>
 
 <script>
-window.addEventListener('DOMContentLoaded',()=>{
-try{
-  // ====== Estado global ======
-  const state = {
-    score: 0,
-    completed: new Set(JSON.parse(localStorage.getItem('completed')||'[]')),
-    modules:['intro','estructura','bigquery','workbench','buenas'],
-    user: localStorage.getItem('mc_user') || null
-  };
-  const scoreEl = document.getElementById('score');
-  const userBadge = document.createElement('span'); userBadge.className='pill'; userBadge.id='userBadge'; userBadge.textContent = state.user?`Usuario: ${state.user}`:'Usuario: —';
-  const sb=document.querySelector('.scorebar'); if(sb){ sb.appendChild(userBadge); }
-  const doneEl = document.getElementById('done');
-  const progressEl = document.getElementById('progress');
-  const ptextEl = document.getElementById('ptext');
-
-  function save(){ localStorage.setItem('completed', JSON.stringify([...state.completed])); }
-
-  function updateProgress(){
-    const pct = Math.round((state.completed.size / state.modules.length) * 100);
-    progressEl.style.width = pct + '%';
-    ptextEl.textContent = pct + '% completado';
-    doneEl.textContent = state.completed.size;
-    scoreEl.textContent = state.score;
-  }
-
-  // ====== Navegación ======
-  document.querySelectorAll('.menu button[data-target]').forEach(b=>{
-    b.addEventListener('click',()=>{
-      const id = b.getAttribute('data-target');
-      document.querySelector('#'+id).scrollIntoView({behavior:'smooth', block:'start'});
-    })
-  });
-
-  // ====== Quiz engine ======
-  function setupQuiz(sectionId){
-    const sec = document.querySelector(`[data-quiz="${sectionId}"]`);
-    const questions = sec.querySelectorAll('.q');
-    questions.forEach(q=>{
-      const answer = q.getAttribute('data-answer');
-      const fb = q.querySelector('.feedback');
-      q.querySelectorAll('.options button').forEach(btn=>{
-        btn.addEventListener('click',()=>{
-          const chosen = btn.getAttribute('data-opt');
-          q.querySelectorAll('.options button').forEach(x=>x.disabled=true);
-          if(chosen===answer){
-            btn.classList.add('correct');
-            fb.innerHTML = '✅ ¡Correcto!';
-            state.score += 5; // cada acierto suma
-          } else {
-            btn.classList.add('wrong');
-            const right = q.querySelector(`.options button[data-opt="${answer}"]`);
-            right.classList.add('correct');
-            fb.innerHTML = '❌ Incorrecto. ' + q.getAttribute('data-feedback');
-          }
-          updateProgress();
-        })
-      })
-    });
-    const finishBtn = sec.querySelector(`[data-finish="${sectionId}"]`);
-    finishBtn.addEventListener('click',()=>{
-      const allAnswered = [...questions].every(q=>[...q.querySelectorAll('.options button')].some(b=>b.disabled));
-      if(!allAnswered){ alert('Respondé todas las preguntas para completar el módulo.'); return; }
-      state.completed.add(sectionId);
-      save();
-      updateProgress();
-      finishBtn.textContent = '✓ Módulo completado';
-      finishBtn.disabled = true;
-      logEvent('module_complete', {module: sectionId});
-    });
-  }
-
-  ['intro','estructura','bigquery','workbench','buenas'].forEach(setupQuiz);
-
-  // Restaurar botones de módulos ya completados
-  state.completed.forEach(id=>{
-    const btn = document.querySelector(`[data-finish="${id}"]`);
-    if(btn){ btn.textContent='✓ Módulo completado'; btn.disabled=true; }
-  });
-
-  // ====== Juegos: drag & drop ======
-  let dragItem = null; let sourceParent = null;
-  function makeDraggable(el){
-    el.addEventListener('dragstart', e=>{ dragItem = el; sourceParent = el.parentElement; e.dataTransfer.setData('text/plain', el.textContent); });
-  }
-  document.querySelectorAll('.draggable').forEach(makeDraggable);
-  function makeDropzone(z){
-    z.addEventListener('dragover', e=>{ e.preventDefault(); z.style.background='#0e1a33'; });
-    z.addEventListener('dragleave', ()=> z.style.background='');
-    z.addEventListener('drop', e=>{ e.preventDefault(); z.style.background=''; if(dragItem){ z.appendChild(dragItem); }});
-  }
-  // Permitir volver al panel izquierdo (fuente) y a cada target
-  document.querySelectorAll('.droptarget').forEach(makeDropzone);
-  document.querySelectorAll('.schema .grid.cols-2 > div:first-child').forEach(makeDropzone);
-
-  document.getElementById('checkMatch').addEventListener('click',()=>{
-    let ok = 0; document.querySelectorAll('.droptarget').forEach(t=>{ const child=t.querySelector('.draggable'); if(child && child.dataset.key===t.dataset.accept) ok++; });
-    const feed = document.getElementById('matchFeedback');
-    if(ok===3){ feed.textContent='✅ ¡Excelente! 3/3 pares correctos.'; state.score+=10; logEvent('game_match_success', {scoreAdded:10}); } else { feed.textContent=`⚠️ ${ok}/3 correctos. Ajustá los pares (podés arrastrar de vuelta).`; logEvent('game_match_attempt', {ok}); }/3 correctos. Ajustá los pares (podés arrastrar de vuelta).`; }
-    updateProgress();
-  });
-
-  // Orden
-  const orderZone = document.getElementById('orderZone');
-  orderZone.addEventListener('dragover', e=>{e.preventDefault()});
-  orderZone.addEventListener('drop', e=>{ e.preventDefault(); const after = document.elementFromPoint(e.clientX,e.clientY); if(dragItem && orderZone.contains(after)){ orderZone.insertBefore(dragItem, after.closest('.draggable')); }});
-  document.getElementById('checkOrder').addEventListener('click',()=>{
-    const arr = [...orderZone.querySelectorAll('.draggable')].map(x=>x.dataset.order).join('-');
-    if(arr==='1-2-3'){ document.getElementById('orderFeedback').textContent='✅ Orden perfecto: Proyecto → Dataset → Tabla'; state.score+=10; logEvent('game_order_success', {scoreAdded:10}); }
-    else { document.getElementById('orderFeedback').textContent='❌ Revisá el orden. Pista: contenedor→colección→datos.'; logEvent('game_order_attempt', {order:arr}); }
-    updateProgress();
-  });
-    updateProgress();
-  });
-
-  // Completar frase cronometrado
-  let timeLeft = 20, timerId = null; const timerEl = document.getElementById('timer');
-  document.getElementById('startTimer').addEventListener('click',()=>{
-    clearInterval(timerId); timeLeft = 20; timerEl.textContent = timeLeft; document.getElementById('fillFeedback').textContent='';
-    timerId = setInterval(()=>{ timeLeft--; timerEl.textContent=timeLeft; if(timeLeft<=0){ clearInterval(timerId); checkFill(); } },1000);
-  });
-  document.getElementById('checkNow').addEventListener('click',()=>{ clearInterval(timerId); checkFill(); });
-  function checkFill(){
-    const val = (document.getElementById('fill1').value||'').trim().toLowerCase();
-    if(['bytes','bytes procesados','los bytes'].includes(val)){
-      document.getElementById('fillFeedback').innerHTML='✅ Correcto: BigQuery cobra por <strong>bytes</strong> procesados.'; state.score+=5; logEvent('game_fill_success', {scoreAdded:5});
-    } else {
-      document.getElementById('fillFeedback').innerHTML='❌ La respuesta esperada era: <strong>bytes</strong>.'; logEvent('game_fill_attempt', {value:val});
-    }
-    updateProgress();
-  }
-
-  // ====== Glosario ======
-  const GLOSS = {
-    'Proyecto':'Unidad principal de trabajo, agrupa recursos y define facturación.',
-    'Dataset':'Conjunto lógico de tablas dentro de BigQuery asociado a un proyecto.',
-    'Tabla':'Estructura tabular donde residen los datos en BigQuery.',
-    'BigQuery':'Data warehouse serverless de Google que usa Standard SQL.',
-    'Vertex AI Workbench':'Entorno gestionado de notebooks Jupyter en GCP.',
-    'Cloud Storage':'Servicio de almacenamiento de objetos (archivos/buckets).',
-    'Bytes procesados':'Métrica clave para costo de consulta en BigQuery.',
-    'Kernel de Jupyter':'Entorno de ejecución seleccionado para un notebook.',
-    'requirements.txt':'Archivo que lista dependencias de un proyecto Python.',
-    'Roles y permisos':'Modelo de control de acceso basado en permisos mínimos necesarios.'
-  };
-  const glossList = document.getElementById('glossList');
-  const glossDef = document.getElementById('glossDef');
-  Object.keys(GLOSS).sort().forEach(k=>{
-    const b = document.createElement('button'); b.textContent = k; b.addEventListener('click',()=>{ glossDef.innerHTML = `<strong>${k}:</strong> ${GLOSS[k]}`; }); glossList.appendChild(b);
-  });
-
-  // ====== Progreso detallado ======
-  const statusList = document.getElementById('statusList');
-  function renderStatus(){
-    statusList.innerHTML='';
-    state.modules.forEach(id=>{
-      const li = document.createElement('li');
-      const ok = state.completed.has(id)?'✓':'…';
-      const title = document.querySelector(`#${id} h2`).textContent;
-      li.textContent = `${ok} ${title}`;
-      statusList.appendChild(li);
-    })
-  }
-  document.getElementById('reset').addEventListener('click',()=>{ state.completed.clear(); state.score = 0; save(); updateProgress(); renderStatus(); document.querySelectorAll('[data-finish]').forEach(b=>{ b.disabled=false; b.textContent='Finalizar módulo'; }); alert('Progreso reiniciado.'); })
-
-  // ====== Backend (Google Apps Script) ======
-  // ====== Backend por Google Forms (sin login) ======
+// ===== Minicampus – runtime JS (stable) =====
+document.addEventListener('DOMContentLoaded', function(){
+  // --- Config (Google Forms backend – no login) ---
   const FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSfWM3J2P-dU7kBdjt0Nx1YRGJWxvl-Yi46MCqLZyr4E7SK8pA/formResponse';
   const ENTRY = {
     user: 'entry.715045680',
@@ -773,18 +609,45 @@ try{
       fd.append(ENTRY.score, String(payload.score??''));
       fd.append(ENTRY.completed, JSON.stringify(payload.completed||[]));
       fetch(FORM_URL, { method:'POST', mode:'no-cors', body: fd });
-    }catch(e){ console.warn('No se pudo enviar al Form', e); }
-  }, body: JSON.stringify(payload)});
-      const txt = await res.text();
-      try { return JSON.parse(txt); } catch(e){ console.warn('Respuesta no-JSON:', txt); return {ok:false, raw: txt}; }
-    }catch(e){ console.warn('No se pudo contactar al backend', e); return null; }
-  }, body: JSON.stringify(payload)});
-      return await res.json();
-    }catch(e){ console.warn('No se pudo contactar al backend', e); return null; }
+    }catch(e){ console.warn('Form POST error', e); }
   }
-  async function ensureUser(){
+
+  // --- Estado global ---
+  const state = {
+    score: 0,
+    completed: new Set(JSON.parse(localStorage.getItem('completed')||'[]')),
+    modules:['intro','estructura','bigquery','workbench','buenas'],
+    user: localStorage.getItem('mc_user') || null
+  };
+
+  // --- Elements ---
+  const scoreEl = document.getElementById('score');
+  const doneEl = document.getElementById('done');
+  const progressEl = document.getElementById('progress');
+  const ptextEl = document.getElementById('ptext');
+
+  // Badge usuario
+  (function(){
+    const sb = document.querySelector('.scorebar');
+    if(!sb) return;
+    const userBadge = document.createElement('span');
+    userBadge.className='pill'; userBadge.id='userBadge';
+    userBadge.textContent = state.user?`Usuario: ${state.user}`:'Usuario: —';
+    sb.appendChild(userBadge);
+  })();
+
+  function save(){ localStorage.setItem('completed', JSON.stringify([...state.completed])); }
+  function updateProgress(){
+    const pct = Math.round((state.completed.size / state.modules.length) * 100);
+    if(progressEl) progressEl.style.width = pct + '%';
+    if(ptextEl) ptextEl.textContent = pct + '% completado';
+    if(doneEl) doneEl.textContent = state.completed.size;
+    if(scoreEl) scoreEl.textContent = state.score;
+  }
+
+  // Identidad local
+  function ensureUser(){
     if(state.user) return state.user;
-    // Genera alias local (sin backend): usuario-XXXX
     const alias = `usuario-${Math.floor(1000 + Math.random()*9000)}`;
     state.user = alias; localStorage.setItem('mc_user', alias);
     const ub = document.getElementById('userBadge'); if(ub) ub.textContent = `Usuario: ${alias}`;
@@ -795,17 +658,150 @@ try{
     const payload = { user: state.user, kind, detail, score: state.score, completed:[...state.completed], ts: new Date().toISOString() };
     sendToForm(payload);
   }
-  async function logEvent(kind, detail){
-    await ensureUser();
-    const payload = {action:'log', user: state.user, kind, detail, score: state.score, completed:[...state.completed], ts: new Date().toISOString()};
-    apiPost(payload);
+
+  // --- Navegación lateral ---
+  document.querySelectorAll('.menu button[data-target]').forEach(b=>{
+    b.addEventListener('click',()=>{
+      const id = b.getAttribute('data-target');
+      const el = document.getElementById(id);
+      if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+    });
+  });
+
+  // --- Quiz engine ---
+  function setupQuiz(sectionId){
+    const sec = document.querySelector(`[data-quiz="${sectionId}"]`);
+    if(!sec) return;
+    const questions = sec.querySelectorAll('.q');
+    questions.forEach(q=>{
+      const answer = q.getAttribute('data-answer');
+      const fb = q.querySelector('.feedback');
+      q.querySelectorAll('.options button').forEach(btn=>{
+        btn.addEventListener('click',()=>{
+          const chosen = btn.getAttribute('data-opt');
+          q.querySelectorAll('.options button').forEach(x=>x.disabled=true);
+          if(chosen===answer){
+            btn.classList.add('correct');
+            if(fb) fb.innerHTML = '✅ ¡Correcto!';
+            state.score += 5;
+          } else {
+            btn.classList.add('wrong');
+            const right = q.querySelector(`.options button[data-opt="${answer}"]`);
+            if(right) right.classList.add('correct');
+            if(fb) fb.innerHTML = '❌ Incorrecto. ' + q.getAttribute('data-feedback');
+          }
+          updateProgress();
+        });
+      });
+    });
+    const finishBtn = sec.querySelector(`[data-finish="${sectionId}"]`);
+    if(finishBtn){
+      finishBtn.addEventListener('click',()=>{
+        const allAnswered = [...questions].every(q=>[...q.querySelectorAll('.options button')].some(b=>b.disabled));
+        if(!allAnswered){ alert('Respondé todas las preguntas para completar el módulo.'); return; }
+        state.completed.add(sectionId);
+        save(); updateProgress();
+        finishBtn.textContent = '✓ Módulo completado';
+        finishBtn.disabled = true;
+        logEvent('module_complete', {module: sectionId});
+      });
+    }
+  }
+  ['intro','estructura','bigquery','workbench','buenas'].forEach(setupQuiz);
+  state.completed.forEach(id=>{
+    const btn = document.querySelector(`[data-finish="${id}"]`);
+    if(btn){ btn.textContent='✓ Módulo completado'; btn.disabled=true; }
+  });
+
+  // --- Juegos: Drag & Drop ---
+  let dragItem = null;
+  function makeDraggable(el){ el.addEventListener('dragstart', e=>{ dragItem = el; e.dataTransfer.setData('text/plain', el.textContent); }); }
+  document.querySelectorAll('.draggable').forEach(makeDraggable);
+  function makeDropzone(z){
+    z.addEventListener('dragover', e=>{ e.preventDefault(); z.style.background='#0e1a33'; });
+    z.addEventListener('dragleave', ()=> z.style.background='');
+    z.addEventListener('drop', e=>{ e.preventDefault(); z.style.background=''; if(dragItem){ z.appendChild(dragItem); }});
+  }
+  document.querySelectorAll('.droptarget').forEach(makeDropzone);
+  document.querySelectorAll('.schema .grid.cols-2 > div:first-child').forEach(makeDropzone);
+
+  const checkMatchBtn = document.getElementById('checkMatch');
+  if(checkMatchBtn){
+    checkMatchBtn.addEventListener('click',()=>{
+      let ok = 0; document.querySelectorAll('.droptarget').forEach(t=>{ const child=t.querySelector('.draggable'); if(child && child.dataset.key===t.dataset.accept) ok++; });
+      const feed = document.getElementById('matchFeedback');
+      if(ok===3){ if(feed) feed.textContent='✅ ¡Excelente! 3/3 pares correctos.'; state.score+=10; logEvent('game_match_success', {scoreAdded:10}); }
+      else { if(feed) feed.textContent=`⚠️ ${ok}/3 correctos. Ajustá los pares (podés arrastrar de vuelta).`; logEvent('game_match_attempt', {ok}); }
+      updateProgress();
+    });
+  }
+
+  // Orden
+  const orderZone = document.getElementById('orderZone');
+  if(orderZone){
+    orderZone.addEventListener('dragover', e=>{e.preventDefault()});
+    orderZone.addEventListener('drop', e=>{ e.preventDefault(); const after = document.elementFromPoint(e.clientX,e.clientY); if(dragItem && after && orderZone.contains(after)){ const target = after.closest('.draggable'); orderZone.insertBefore(dragItem, target); }});
+    const checkOrderBtn = document.getElementById('checkOrder');
+    if(checkOrderBtn){
+      checkOrderBtn.addEventListener('click',()=>{
+        const arr = [...orderZone.querySelectorAll('.draggable')].map(x=>x.dataset.order).join('-');
+        const of = document.getElementById('orderFeedback');
+        if(arr==='1-2-3'){ if(of) of.textContent='✅ Orden perfecto: Proyecto → Dataset → Tabla'; state.score+=10; logEvent('game_order_success', {scoreAdded:10}); }
+        else { if(of) of.textContent='❌ Revisá el orden. Pista: contenedor→colección→datos.'; logEvent('game_order_attempt', {order:arr}); }
+        updateProgress();
+      });
+    }
+  }
+
+  // Completar frase cronometrado
+  let timeLeft = 20, timerId = null; const timerEl = document.getElementById('timer');
+  const startBtn = document.getElementById('startTimer');
+  const checkNowBtn = document.getElementById('checkNow');
+  function checkFill(){
+    const val = (document.getElementById('fill1')?.value||'').trim().toLowerCase();
+    const fb = document.getElementById('fillFeedback');
+    if(['bytes','bytes procesados','los bytes'].includes(val)){
+      if(fb) fb.innerHTML='✅ Correcto: BigQuery cobra por <strong>bytes</strong> procesados.'; state.score+=5; logEvent('game_fill_success', {scoreAdded:5});
+    } else {
+      if(fb) fb.innerHTML='❌ La respuesta esperada era: <strong>bytes</strong>.'; logEvent('game_fill_attempt', {value:val});
+    }
+    updateProgress();
+  }
+  if(startBtn){
+    startBtn.addEventListener('click',()=>{
+      clearInterval(timerId); timeLeft = 20; if(timerEl) timerEl.textContent = timeLeft;
+      const fb = document.getElementById('fillFeedback'); if(fb) fb.textContent='';
+      timerId = setInterval(()=>{ timeLeft--; if(timerEl) timerEl.textContent=timeLeft; if(timeLeft<=0){ clearInterval(timerId); checkFill(); } },1000);
+    });
+  }
+  if(checkNowBtn){ checkNowBtn.addEventListener('click',()=>{ clearInterval(timerId); checkFill(); }); }
+
+  // Progreso detallado
+  const statusList = document.getElementById('statusList');
+  function renderStatus(){
+    if(!statusList) return;
+    statusList.innerHTML='';
+    state.modules.forEach(id=>{
+      const li = document.createElement('li');
+      const ok = state.completed.has(id)?'✓':'…';
+      const title = document.querySelector(`#${id} h2`)?.textContent || id;
+      li.textContent = `${ok} ${title}`;
+      statusList.appendChild(li);
+    });
+  }
+  const resetBtn = document.getElementById('reset');
+  if(resetBtn){
+    resetBtn.addEventListener('click',()=>{
+      state.completed.clear(); state.score = 0; save(); updateProgress(); renderStatus();
+      document.querySelectorAll('[data-finish]').forEach(b=>{ b.disabled=false; b.textContent='Finalizar módulo'; });
+      alert('Progreso reiniciado.');
+    });
   }
 
   // Init
+  ensureUser();
   updateProgress();
   renderStatus();
-  ensureUser();
-}catch(e){console.error('Init error:', e); alert('Hubo un error inicializando la interactividad. Recargá la página (Ctrl+F5).');}
 });
 </script>
 
