@@ -589,6 +589,8 @@ git push</pre>
 </div>
 
 <script>
+window.addEventListener('DOMContentLoaded',()=>{
+try{
   // ====== Estado global ======
   const state = {
     score: 0,
@@ -598,7 +600,7 @@ git push</pre>
   };
   const scoreEl = document.getElementById('score');
   const userBadge = document.createElement('span'); userBadge.className='pill'; userBadge.id='userBadge'; userBadge.textContent = state.user?`Usuario: ${state.user}`:'Usuario: —';
-  document.querySelector('.scorebar').appendChild(userBadge);
+  const sb=document.querySelector('.scorebar'); if(sb){ sb.appendChild(userBadge); }
   const doneEl = document.getElementById('done');
   const progressEl = document.getElementById('progress');
   const ptextEl = document.getElementById('ptext');
@@ -803,6 +805,8 @@ git push</pre>
   updateProgress();
   renderStatus();
   ensureUser();
+}catch(e){console.error('Init error:', e); alert('Hubo un error inicializando la interactividad. Recargá la página (Ctrl+F5).');}
+});
 </script>
 
 <!--
