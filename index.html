@@ -753,21 +753,45 @@ git push</pre>
   document.getElementById('reset').addEventListener('click',()=>{ state.completed.clear(); state.score = 0; save(); updateProgress(); renderStatus(); document.querySelectorAll('[data-finish]').forEach(b=>{ b.disabled=false; b.textContent='Finalizar módulo'; }); alert('Progreso reiniciado.'); })
 
   // ====== Backend (Google Apps Script) ======
-  const SCRIPT_URL = 'https://script.google.com/a/macros/osde.com.ar/s/AKfycbzQg-gdRDWMZiK_uziPpFQFc5tGTPYzBHTDYDfGMOGwna2KhW642yrEwBdoDnkdPKFd/exec'; // ← Reemplazá por tu WebApp URL
-  async function apiPost(payload){
+  // ====== Backend por Google Forms (sin login) ======
+  const FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSfWM3J2P-dU7kBdjt0Nx1YRGJWxvl-Yi46MCqLZyr4E7SK8pA/formResponse';
+  const ENTRY = {
+    user: 'entry.715045680',
+    kind: 'entry.1060114320',
+    detail: 'entry.789560157',
+    score: 'entry.1626032460',
+    completed: 'entry.1134840062'
+  };
+  function sendToForm(payload){
     try{
-      const res = await fetch(SCRIPT_URL, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+      const fd = new FormData();
+      fd.append(ENTRY.user, payload.user||'');
+      fd.append(ENTRY.kind, payload.kind||'');
+      fd.append(ENTRY.detail, JSON.stringify(payload.detail||{}));
+      fd.append(ENTRY.score, String(payload.score??''));
+      fd.append(ENTRY.completed, JSON.stringify(payload.completed||[]));
+      fetch(FORM_URL, { method:'POST', mode:'no-cors', body: fd });
+    }catch(e){ console.warn('No se pudo enviar al Form', e); }
+  }, body: JSON.stringify(payload)});
+      const txt = await res.text();
+      try { return JSON.parse(txt); } catch(e){ console.warn('Respuesta no-JSON:', txt); return {ok:false, raw: txt}; }
+    }catch(e){ console.warn('No se pudo contactar al backend', e); return null; }
+  }, body: JSON.stringify(payload)});
       return await res.json();
     }catch(e){ console.warn('No se pudo contactar al backend', e); return null; }
   }
   async function ensureUser(){
     if(state.user) return state.user;
-    // registrar para obtener usuarioN desde el backend
-    const r = await apiPost({action:'register'});
-    const alias = (r && r.user) ? r.user : `usuario-${Math.floor(Math.random()*9999)}`;
+    // Genera alias local (sin backend): usuario-XXXX
+    const alias = `usuario-${Math.floor(1000 + Math.random()*9000)}`;
     state.user = alias; localStorage.setItem('mc_user', alias);
     const ub = document.getElementById('userBadge'); if(ub) ub.textContent = `Usuario: ${alias}`;
     return alias;
+  }
+  function logEvent(kind, detail){
+    ensureUser();
+    const payload = { user: state.user, kind, detail, score: state.score, completed:[...state.completed], ts: new Date().toISOString() };
+    sendToForm(payload);
   }
   async function logEvent(kind, detail){
     await ensureUser();
