@@ -593,9 +593,12 @@ git push</pre>
   const state = {
     score: 0,
     completed: new Set(JSON.parse(localStorage.getItem('completed')||'[]')),
-    modules:['intro','estructura','bigquery','workbench','buenas']
+    modules:['intro','estructura','bigquery','workbench','buenas'],
+    user: localStorage.getItem('mc_user') || null
   };
   const scoreEl = document.getElementById('score');
+  const userBadge = document.createElement('span'); userBadge.className='pill'; userBadge.id='userBadge'; userBadge.textContent = state.user?`Usuario: ${state.user}`:'Usuario: —';
+  document.querySelector('.scorebar').appendChild(userBadge);
   const doneEl = document.getElementById('done');
   const progressEl = document.getElementById('progress');
   const ptextEl = document.getElementById('ptext');
@@ -645,7 +648,6 @@ git push</pre>
     });
     const finishBtn = sec.querySelector(`[data-finish="${sectionId}"]`);
     finishBtn.addEventListener('click',()=>{
-      // Para completar, todas las preguntas deben estar respondidas
       const allAnswered = [...questions].every(q=>[...q.querySelectorAll('.options button')].some(b=>b.disabled));
       if(!allAnswered){ alert('Respondé todas las preguntas para completar el módulo.'); return; }
       state.completed.add(sectionId);
@@ -653,6 +655,7 @@ git push</pre>
       updateProgress();
       finishBtn.textContent = '✓ Módulo completado';
       finishBtn.disabled = true;
+      logEvent('module_complete', {module: sectionId});
     });
   }
 
@@ -682,7 +685,7 @@ git push</pre>
   document.getElementById('checkMatch').addEventListener('click',()=>{
     let ok = 0; document.querySelectorAll('.droptarget').forEach(t=>{ const child=t.querySelector('.draggable'); if(child && child.dataset.key===t.dataset.accept) ok++; });
     const feed = document.getElementById('matchFeedback');
-    if(ok===3){ feed.textContent='✅ ¡Excelente! 3/3 pares correctos.'; state.score+=10; } else { feed.textContent=`⚠️ ${ok}/3 correctos. Ajustá los pares (podés arrastrar de vuelta).`; }
+    if(ok===3){ feed.textContent='✅ ¡Excelente! 3/3 pares correctos.'; state.score+=10; logEvent('game_match_success', {scoreAdded:10}); } else { feed.textContent=`⚠️ ${ok}/3 correctos. Ajustá los pares (podés arrastrar de vuelta).`; logEvent('game_match_attempt', {ok}); }/3 correctos. Ajustá los pares (podés arrastrar de vuelta).`; }
     updateProgress();
   });
 
@@ -692,8 +695,10 @@ git push</pre>
   orderZone.addEventListener('drop', e=>{ e.preventDefault(); const after = document.elementFromPoint(e.clientX,e.clientY); if(dragItem && orderZone.contains(after)){ orderZone.insertBefore(dragItem, after.closest('.draggable')); }});
   document.getElementById('checkOrder').addEventListener('click',()=>{
     const arr = [...orderZone.querySelectorAll('.draggable')].map(x=>x.dataset.order).join('-');
-    if(arr==='1-2-3'){ document.getElementById('orderFeedback').textContent='✅ Orden perfecto: Proyecto → Dataset → Tabla'; state.score+=10; }
-    else { document.getElementById('orderFeedback').textContent='❌ Revisá el orden. Pista: pensá en contenedor→colección→datos.'; }
+    if(arr==='1-2-3'){ document.getElementById('orderFeedback').textContent='✅ Orden perfecto: Proyecto → Dataset → Tabla'; state.score+=10; logEvent('game_order_success', {scoreAdded:10}); }
+    else { document.getElementById('orderFeedback').textContent='❌ Revisá el orden. Pista: contenedor→colección→datos.'; logEvent('game_order_attempt', {order:arr}); }
+    updateProgress();
+  });
     updateProgress();
   });
 
@@ -706,8 +711,11 @@ git push</pre>
   document.getElementById('checkNow').addEventListener('click',()=>{ clearInterval(timerId); checkFill(); });
   function checkFill(){
     const val = (document.getElementById('fill1').value||'').trim().toLowerCase();
-    if(['bytes','bytes procesados','los bytes'].includes(val)){ document.getElementById('fillFeedback').innerHTML='✅ Correcto: BigQuery cobra por <strong>bytes</strong> procesados.'; state.score+=5; }
-    else{ document.getElementById('fillFeedback').innerHTML='❌ La respuesta esperada era: <strong>bytes</strong>.'; }
+    if(['bytes','bytes procesados','los bytes'].includes(val)){
+      document.getElementById('fillFeedback').innerHTML='✅ Correcto: BigQuery cobra por <strong>bytes</strong> procesados.'; state.score+=5; logEvent('game_fill_success', {scoreAdded:5});
+    } else {
+      document.getElementById('fillFeedback').innerHTML='❌ La respuesta esperada era: <strong>bytes</strong>.'; logEvent('game_fill_attempt', {value:val});
+    }
     updateProgress();
   }
 
@@ -744,9 +752,33 @@ git push</pre>
   }
   document.getElementById('reset').addEventListener('click',()=>{ state.completed.clear(); state.score = 0; save(); updateProgress(); renderStatus(); document.querySelectorAll('[data-finish]').forEach(b=>{ b.disabled=false; b.textContent='Finalizar módulo'; }); alert('Progreso reiniciado.'); })
 
+  // ====== Backend (Google Apps Script) ======
+  const SCRIPT_URL = 'https://script.google.com/a/macros/osde.com.ar/s/AKfycbzQg-gdRDWMZiK_uziPpFQFc5tGTPYzBHTDYDfGMOGwna2KhW642yrEwBdoDnkdPKFd/exec'; // ← Reemplazá por tu WebApp URL
+  async function apiPost(payload){
+    try{
+      const res = await fetch(SCRIPT_URL, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+      return await res.json();
+    }catch(e){ console.warn('No se pudo contactar al backend', e); return null; }
+  }
+  async function ensureUser(){
+    if(state.user) return state.user;
+    // registrar para obtener usuarioN desde el backend
+    const r = await apiPost({action:'register'});
+    const alias = (r && r.user) ? r.user : `usuario-${Math.floor(Math.random()*9999)}`;
+    state.user = alias; localStorage.setItem('mc_user', alias);
+    const ub = document.getElementById('userBadge'); if(ub) ub.textContent = `Usuario: ${alias}`;
+    return alias;
+  }
+  async function logEvent(kind, detail){
+    await ensureUser();
+    const payload = {action:'log', user: state.user, kind, detail, score: state.score, completed:[...state.completed], ts: new Date().toISOString()};
+    apiPost(payload);
+  }
+
   // Init
   updateProgress();
   renderStatus();
+  ensureUser();
 </script>
 
 <!--
